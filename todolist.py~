@@ -1,9 +1,14 @@
 import sqlite3
-from flask import Flask, render_template, g
+from flask import Flask, render_template, g, redirect, url_for, request, session, flash
 
 DATABASE = 'test.db'
+USERNAME = 'admin'
+PASSWORD = 'admin'
+SECRET_KEY = 'this is secret!'
+CURRENT_ID = 0
 
 app = Flask(__name__)
+app.config.from_object(__name__)
 
 @app.route('/')
 def welcome():
@@ -11,9 +16,56 @@ def welcome():
 	
 @app.route('/task', methods=['GET', 'POST'])
 def task():
-	#if request.method == 'POST':
-	
+	if request.method == 'POST':
+		if not session.get('logged_in'):	
+			abort(401)
+		description = request.form['description']
+		category = request.form['category']
+		priority = request.form['priority']	
+		
+		addTask(category,priority,description,current_id)
+		current_id += 1
+		flash("new task added")
+		return redirect(url_for('task'))
+		
 	return render_template('show_entries.html', tasks=query_db('select * from tasks'))
+	
+@app.route('/login', methods=['GET','POST'])
+def login():
+	error = None 
+	if request.method=='POST':
+		if request.form['username'] != app.config['USERNAME']:
+			error = 'invalid username'
+		elif request.form['password'] != app.config['PASSWORD']:
+			error = 'invalid password'	
+		else:
+			session['logged_in'] = True
+			flash("You are logged in")
+			return redirect(url_for('task'))
+	return render_template('login.html', error=error)
+	
+@app.route('/logout')
+def logout():
+	session.pop('logged_in')
+	flash("you are logged out")
+	return redirect(url_for('task'))	
+	
+@app.route('/delete', methods=['POST'])
+def delete():
+	if not session.get('logged_in'):
+		abort(401)
+	removetask(request.form['category'],request.form['priority'],request.form['description'],request.form['id'])
+	flash("task was deleted")
+	return redirect(url_for('task'))
+	
+def addTask(category,priority,description,id):
+	query_db('insert into tasks values(?,?,?,?)', [category,int(priority),description,int(id)], one=True)
+	get_db().commit();
+	
+def removetask(category,priority,description, id):
+	query_db('delete from tasks where category = ? and description = ? and priority = ? and id = ?', [category, description, priority, id], one=True)
+	get_db().commit()
+	
 	
 def query_db(query, args=(), one=False):
 	cur = get_db().cursor()
@@ -36,7 +88,8 @@ def close_connection(exception):
 		db.close()
 		db = None
 		
-if __name__ == '__main__':		
+if __name__ == '__main__':	
+	current_id = 0	
 	app.debug = True
 	app.run()
 	

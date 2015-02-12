@@ -1,19 +1,5 @@
-<!doctype html>
-<title>CMPUT 410 - Jinja Lab</title>
-<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
-<div class="page">
-	<h1>TODO-List</h1>
-		<div class="metanav">
-		{% if not session.logged_in %}
-			<a href="{{ url_for('login')}}">Log in</a>
-		{% else %}
-			<a href="{{ url_for('logout')}}">Log out</a>
-		{% endif %}
-		</div>
-		{% for message in get_flash_messages() %}
-			<div class="flash">{{ message }}</div>
-		{% endfor %}
-		
+{% extends "layout.html" %}
+{% block body %}
 		
 	{% if session.logged_in %}
 		<form action="{{ url_for('task') }}" method=post>
@@ -21,6 +7,7 @@
 				<p>Category <input type=text name=category></p>
 				<p>Priority <input type=text name=priority></p>
 				<p>Description <input type=text name=description></p>
+				<p><input type=submit value=Add></p>
 			</dl>
 		</form>
 	{% endif %}
@@ -46,6 +33,7 @@
 						<input type="hidden" name=category value="{{ task['category'] }}">
 						<input type="hidden" name=priority value="{{ task['priority'] }}">
 						<input type="hidden" name=description value="{{ task['description'] }}">
+						<input type="hidden" name=id value="{{ task['id'] }}">
 						<input type=submit value="Delete">
 					</form>
 				{% endif %}
@@ -54,4 +42,5 @@
 		{% endfor %}
 		</tbody>
 	</table>
-</div>
+
+{% endblock %}
